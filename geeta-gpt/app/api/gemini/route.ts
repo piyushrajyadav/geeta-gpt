@@ -4,14 +4,29 @@ import { NextRequest, NextResponse } from 'next/server';
 // Use the environment variable for the API key
 const API_KEY = process.env.GEMINI_API_KEY;
 
-if (!API_KEY) {
-  throw new Error('GEMINI_API_KEY is not set in environment variables');
+// Initialize the Gemini client if API key is available
+let genAI: GoogleGenerativeAI | null = null;
+try {
+  if (API_KEY) {
+    genAI = new GoogleGenerativeAI(API_KEY);
+    console.log('Gemini client initialized successfully');
+  } else {
+    console.error('GEMINI_API_KEY is not set in environment variables');
+  }
+} catch (error) {
+  console.error('Error initializing Gemini client:', error);
 }
 
-// Initialize the Gemini client
-const genAI = new GoogleGenerativeAI(API_KEY);
-
 export async function POST(request: NextRequest) {
+  // Check if Gemini client is initialized
+  if (!genAI) {
+    console.error('Gemini client is not initialized');
+    return NextResponse.json(
+      { error: 'API configuration error. Please try again later.' },
+      { status: 500 }
+    );
+  }
+
   try {
     // Parse the request body
     const { prompt } = await request.json();
@@ -23,6 +38,10 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Log the API key length for debugging (don't log the actual key)
+    console.log('API Key length:', API_KEY?.length);
+    console.log('Prompt received, length:', prompt.length);
 
     // Prepare the prompt for the Gemini API
     const enhancedPrompt = `
@@ -40,10 +59,9 @@ Question: ${prompt}
 `.trim();
 
     try {
-      // Try with gemini-1.5-pro model
-      console.log("Attempting to use gemini-1.5-pro model...");
+      console.log("Attempting to use gemini-pro model...");
       const model = genAI.getGenerativeModel({ 
-        model: 'gemini-1.5-pro',
+        model: 'gemini-pro',
         generationConfig: {
           temperature: 0.7,
           topP: 0.8,
@@ -52,40 +70,26 @@ Question: ${prompt}
         },
       });
       
-      // Generate content with a simpler approach
+      // Generate content
+      console.log("Generating content...");
       const result = await model.generateContent(enhancedPrompt);
-      
-      const response = result.response;
+      console.log("Content generated, getting response...");
+      const response = await result.response;
       const text = response.text();
       
       if (!text) {
+        console.error('Empty response received from Gemini API');
         throw new Error('Empty response from Gemini API');
       }
       
-      // Return the response text
+      console.log("Successfully generated response, length:", text.length);
       return NextResponse.json({ response: text });
+      
     } catch (apiError) {
       console.error('Gemini API Error:', apiError);
       
-      // Try with a fallback model
-      try {
-        console.log("Attempting to use fallback model...");
-        const fallbackModel = genAI.getGenerativeModel({ 
-          model: 'gemini-pro',
-        });
-        
-        const fallbackResult = await fallbackModel.generateContent(enhancedPrompt);
-        const fallbackText = fallbackResult.response.text();
-        
-        if (fallbackText) {
-          return NextResponse.json({ response: fallbackText });
-        }
-      } catch (fallbackError) {
-        console.error('Fallback model error:', fallbackError);
-      }
-      
       return NextResponse.json(
-        { error: 'Error communicating with Gemini API. Please try again.' },
+        { error: 'Could not generate response. Please try again.' },
         { status: 500 }
       );
     }
