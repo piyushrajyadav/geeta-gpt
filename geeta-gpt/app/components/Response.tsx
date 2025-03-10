@@ -39,7 +39,7 @@ export default function Response({ response, isLoading, error, question, onRegen
           <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-divine-blue/20"></div>
           <h2 className="text-xl font-bold text-divine-blue mb-2">Ask Lord Krishna</h2>
           <p className="text-accent">
-            Seek divine wisdom from the Bhagavad Gita for guidance in your life's journey.
+            Seek divine wisdom from the Bhagavad Gita for guidance in your life&apos;s journey.
           </p>
         </div>
       </div>
@@ -85,7 +85,7 @@ export default function Response({ response, isLoading, error, question, onRegen
           />
           <h2 className="text-xl font-bold text-divine-blue mb-2">Ask Lord Krishna</h2>
           <p className="text-accent">
-            Seek divine wisdom from the Bhagavad Gita for guidance in your life's journey.
+            Seek divine wisdom from the Bhagavad Gita for guidance in your life&apos;s journey.
           </p>
         </div>
       </div>
@@ -108,7 +108,7 @@ export default function Response({ response, isLoading, error, question, onRegen
             height={40} 
             className="mr-3 divine-glow rounded-full"
           />
-          <h3 className="text-lg font-bold text-divine-blue">Lord Krishna's Wisdom</h3>
+          <h3 className="text-lg font-bold text-divine-blue">Lord Krishna&apos;s Wisdom</h3>
         </div>
         
         <div 
@@ -122,7 +122,7 @@ export default function Response({ response, isLoading, error, question, onRegen
           <button 
             onClick={() => {
               navigator.clipboard.writeText(response);
-              alert('Krishna\'s wisdom copied to clipboard!');
+              alert("Krishna's wisdom copied to clipboard!");
             }}
             className="px-3 py-1.5 text-sm bg-accent/10 hover:bg-accent/20 rounded-md flex items-center gap-1"
             aria-label="Copy to clipboard"
