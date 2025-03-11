@@ -60,13 +60,25 @@ export default function Response({ response, isLoading, error, question, onRegen
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-6">
           <h3 className="text-red-800 dark:text-red-300 font-bold mb-2">Divine Connection Interrupted</h3>
           <p className="text-red-700 dark:text-red-200">{error}</p>
-          <button 
-            onClick={onRegenerate}
-            className="mt-4 px-4 py-2 bg-divine-blue text-divine-white rounded-md hover:bg-divine-blue/80"
-            suppressHydrationWarning
-          >
-            Try Again
-          </button>
+          <p className="text-red-600 dark:text-red-300 mt-2 text-sm">
+            This could be due to API limits, network issues, or server load. Please try again in a moment.
+          </p>
+          <div className="mt-4 flex gap-2">
+            <button 
+              onClick={onRegenerate}
+              className="px-4 py-2 bg-divine-blue text-divine-white rounded-md hover:bg-divine-blue/80"
+              suppressHydrationWarning
+            >
+              Try Again
+            </button>
+            <button 
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-accent/10 text-accent rounded-md hover:bg-accent/20"
+              suppressHydrationWarning
+            >
+              Refresh Page
+            </button>
+          </div>
         </div>
       </div>
     );

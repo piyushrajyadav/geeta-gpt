@@ -1,22 +1,6 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { NextRequest, NextResponse } from 'next/server';
 
-// Use the environment variable for the API key
-const API_KEY = process.env.GEMINI_API_KEY;
-
-// Initialize the Gemini client if API key is available
-let genAI: GoogleGenerativeAI | null = null;
-try {
-  if (API_KEY) {
-    genAI = new GoogleGenerativeAI(API_KEY);
-    console.log('Gemini client initialized successfully');
-  } else {
-    console.error('GEMINI_API_KEY is not set in environment variables');
-  }
-} catch (error) {
-  console.error('Error initializing Gemini client:', error);
-}
-
 export async function POST(request: NextRequest) {
   // Set CORS headers
   const headers = {
@@ -30,16 +14,19 @@ export async function POST(request: NextRequest) {
     return new NextResponse(null, { headers });
   }
 
-  // Check if Gemini client is initialized
-  if (!genAI || !API_KEY) {
-    console.error('Gemini client is not initialized or API key is missing');
-    return NextResponse.json(
-      { error: 'API configuration error. Please try again later.' },
-      { status: 500, headers }
-    );
-  }
-
   try {
+    // Get API key from environment or use fallback for testing
+    const API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyD5LTWZrdO7gDCADu4mwaELKPQsId4mbLo';
+    
+    // Check if API key is available
+    if (!API_KEY) {
+      console.error('No API key available');
+      return NextResponse.json(
+        { error: 'API configuration error. Please try again later.' },
+        { status: 500, headers }
+      );
+    }
+
     // Parse the request body
     const { prompt } = await request.json();
     
@@ -52,10 +39,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Log debugging information
-    console.log('API Key is present:', !!API_KEY);
-    console.log('API Key length:', API_KEY.length);
+    console.log('API Key is present and length:', API_KEY.length);
     console.log('Prompt received, length:', prompt.length);
 
+    // Create a new instance of the Gemini API for each request
+    const genAI = new GoogleGenerativeAI(API_KEY);
+    
     // Prepare the prompt for the Gemini API
     const enhancedPrompt = `
 You are Lord Krishna providing divine wisdom based on the Bhagavad Gita.
@@ -71,55 +60,43 @@ Begin your response with a warm, divine greeting and end with a blessing.
 Question: ${prompt}
 `.trim();
 
+    // Create a simple model
+    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    
+    // Generate content
+    console.log("Generating content...");
+    
     try {
-      console.log("Creating Gemini model instance...");
-      const model = genAI.getGenerativeModel({ 
-        model: 'gemini-pro',
-        generationConfig: {
-          temperature: 0.7,
-          topP: 0.8,
-          topK: 40,
-          maxOutputTokens: 2048,
-        },
-      });
-      
-      // Generate content with safety settings
-      console.log("Generating content...");
       const result = await model.generateContent(enhancedPrompt);
-
-      console.log("Content generated, getting response...");
-      const response = await result.response;
-      const text = response.text();
+      const text = result.response.text();
       
       if (!text) {
         console.error('Empty response received from Gemini API');
-        throw new Error('Empty response from Gemini API');
+        return NextResponse.json(
+          { error: 'Empty response from Gemini API. Please try again.' },
+          { status: 500, headers }
+        );
       }
       
       console.log("Successfully generated response, length:", text.length);
       return NextResponse.json({ response: text }, { headers });
-      
-    } catch (apiError: any) {
-      console.error('Gemini API Error details:', {
-        message: apiError.message,
-        name: apiError.name,
-        stack: apiError.stack,
-      });
-      
+    } catch (modelError: any) {
+      console.error('Model error:', modelError.message);
       return NextResponse.json(
-        { error: 'Could not generate response. Please try again.' },
+        { error: 'Error generating content: ' + modelError.message },
         { status: 500, headers }
       );
     }
+    
   } catch (error: any) {
-    console.error('Request processing error details:', {
+    console.error('Error details:', {
       message: error.message,
       name: error.name,
       stack: error.stack,
     });
     
     return NextResponse.json(
-      { error: 'Failed to process your request. Please try again.' },
+      { error: 'Could not generate response. Please try again.' },
       { status: 500, headers }
     );
   }

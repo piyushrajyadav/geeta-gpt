@@ -7,9 +7,11 @@
  */
 export async function askKrishna(prompt: string): Promise<{ response: string; error?: string }> {
   try {
+    console.log('Sending request to API with prompt length:', prompt.length);
+    
     // Add a timeout to the fetch request
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout (increased from 30)
 
     const response = await fetch('/api/gemini', {
       method: 'POST',
@@ -17,30 +19,52 @@ export async function askKrishna(prompt: string): Promise<{ response: string; er
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ prompt }),
-      signal: controller.signal
+      signal: controller.signal,
+      cache: 'no-store' // Ensure we don't use cached responses
     });
 
     clearTimeout(timeoutId);
+    
+    console.log('API response status:', response.status);
 
+    // Handle non-OK responses
     if (!response.ok) {
-      const errorData = await response.json();
-      console.error('API Error:', errorData);
+      let errorMessage = 'Failed to get response from Lord Krishna';
+      
+      try {
+        const errorData = await response.json();
+        console.error('API Error:', errorData);
+        errorMessage = errorData.error || errorMessage;
+      } catch (jsonError) {
+        console.error('Failed to parse error response:', jsonError);
+      }
+      
       return { 
         response: '', 
-        error: errorData.error || 'Failed to get response from Lord Krishna' 
+        error: errorMessage
       };
     }
 
-    const data = await response.json();
-    
-    if (!data.response) {
+    // Parse the successful response
+    try {
+      const data = await response.json();
+      console.log('Received response data:', !!data, 'has response:', !!data.response);
+      
+      if (!data.response) {
+        return {
+          response: '',
+          error: 'Received empty response from Lord Krishna. Please try again.'
+        };
+      }
+      
+      return { response: data.response };
+    } catch (jsonError) {
+      console.error('Failed to parse success response:', jsonError);
       return {
         response: '',
-        error: 'Received empty response from Lord Krishna. Please try again.'
+        error: 'Failed to process response from Lord Krishna. Please try again.'
       };
     }
-    
-    return { response: data.response };
   } catch (error) {
     console.error('Error asking Krishna:', error);
     
