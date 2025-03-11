@@ -18,12 +18,24 @@ try {
 }
 
 export async function POST(request: NextRequest) {
+  // Set CORS headers
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  };
+
+  // Handle OPTIONS request for CORS
+  if (request.method === 'OPTIONS') {
+    return new NextResponse(null, { headers });
+  }
+
   // Check if Gemini client is initialized
-  if (!genAI) {
-    console.error('Gemini client is not initialized');
+  if (!genAI || !API_KEY) {
+    console.error('Gemini client is not initialized or API key is missing');
     return NextResponse.json(
       { error: 'API configuration error. Please try again later.' },
-      { status: 500 }
+      { status: 500, headers }
     );
   }
 
@@ -35,12 +47,13 @@ export async function POST(request: NextRequest) {
     if (!prompt || typeof prompt !== 'string') {
       return NextResponse.json(
         { error: 'Valid prompt is required' },
-        { status: 400 }
+        { status: 400, headers }
       );
     }
 
-    // Log the API key length for debugging (don't log the actual key)
-    console.log('API Key length:', API_KEY?.length);
+    // Log debugging information
+    console.log('API Key is present:', !!API_KEY);
+    console.log('API Key length:', API_KEY.length);
     console.log('Prompt received, length:', prompt.length);
 
     // Prepare the prompt for the Gemini API
@@ -59,7 +72,7 @@ Question: ${prompt}
 `.trim();
 
     try {
-      console.log("Attempting to use gemini-pro model...");
+      console.log("Creating Gemini model instance...");
       const model = genAI.getGenerativeModel({ 
         model: 'gemini-pro',
         generationConfig: {
@@ -70,9 +83,10 @@ Question: ${prompt}
         },
       });
       
-      // Generate content
+      // Generate content with safety settings
       console.log("Generating content...");
       const result = await model.generateContent(enhancedPrompt);
+
       console.log("Content generated, getting response...");
       const response = await result.response;
       const text = response.text();
@@ -83,22 +97,30 @@ Question: ${prompt}
       }
       
       console.log("Successfully generated response, length:", text.length);
-      return NextResponse.json({ response: text });
+      return NextResponse.json({ response: text }, { headers });
       
-    } catch (apiError) {
-      console.error('Gemini API Error:', apiError);
+    } catch (apiError: any) {
+      console.error('Gemini API Error details:', {
+        message: apiError.message,
+        name: apiError.name,
+        stack: apiError.stack,
+      });
       
       return NextResponse.json(
         { error: 'Could not generate response. Please try again.' },
-        { status: 500 }
+        { status: 500, headers }
       );
     }
-  } catch (error) {
-    console.error('Request processing error:', error);
+  } catch (error: any) {
+    console.error('Request processing error details:', {
+      message: error.message,
+      name: error.name,
+      stack: error.stack,
+    });
     
     return NextResponse.json(
       { error: 'Failed to process your request. Please try again.' },
-      { status: 500 }
+      { status: 500, headers }
     );
   }
 } 
