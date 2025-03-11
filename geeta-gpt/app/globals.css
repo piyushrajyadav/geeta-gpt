@@ -169,7 +169,7 @@ body {
 }
 
 .sanskrit-text {
-  font-family: 'Noto Sans Devanagari', serif;
+  font-family: var(--font-noto-devanagari), serif;
   line-height: 1.6;
 }
 

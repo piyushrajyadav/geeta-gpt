@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from "react";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Noto_Sans_Devanagari } from "next/font/google";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -13,6 +13,14 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  display: 'swap',
+});
+
+// Add Noto Sans Devanagari font properly
+const notoSansDevanagari = Noto_Sans_Devanagari({
+  variable: "--font-noto-devanagari",
+  subsets: ["devanagari"],
+  weight: ["400", "700"],
   display: 'swap',
 });
 
@@ -88,15 +96,8 @@ export default function RootLayout({
   }, []);
 
   return (
-    <html lang="en" className={darkMode ? 'dark' : ''} suppressHydrationWarning>
+    <html lang="en" className={`${darkMode ? 'dark' : ''} ${notoSansDevanagari.variable}`} suppressHydrationWarning>
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;700&display=swap"
-          rel="stylesheet"
-          crossOrigin="anonymous"
-        />
         <link rel="icon" href="/peacock-feather.png" type="image/png" />
         <meta name="theme-color" content={darkMode ? '#1a0f00' : '#fff8e6'} />
       </head>

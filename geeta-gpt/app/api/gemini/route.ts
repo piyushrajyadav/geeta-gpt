@@ -1,6 +1,13 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { NextRequest, NextResponse } from 'next/server';
 
+// List of model names to try in order
+const MODEL_NAMES = [
+  "gemini-pro",
+  "gemini-1.0-pro",
+  "gemini-1.5-pro-latest"
+];
+
 export async function POST(request: NextRequest) {
   // Set CORS headers
   const headers = {
@@ -60,40 +67,40 @@ Begin your response with a warm, divine greeting and end with a blessing.
 Question: ${prompt}
 `.trim();
 
-    // Create a simple model
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    // Try each model in sequence
+    let lastError = null;
     
-    // Generate content
-    console.log("Generating content...");
-    
-    try {
-      const result = await model.generateContent(enhancedPrompt);
-      const text = result.response.text();
-      
-      if (!text) {
-        console.error('Empty response received from Gemini API');
-        return NextResponse.json(
-          { error: 'Empty response from Gemini API. Please try again.' },
-          { status: 500, headers }
-        );
+    for (const modelName of MODEL_NAMES) {
+      try {
+        console.log(`Trying model: ${modelName}`);
+        const model = genAI.getGenerativeModel({ model: modelName });
+        
+        const result = await model.generateContent(enhancedPrompt);
+        const text = result.response.text();
+        
+        if (text) {
+          console.log(`Successfully generated response with model ${modelName}, length:`, text.length);
+          return NextResponse.json({ response: text }, { headers });
+        }
+      } catch (modelError: Error | unknown) {
+        const errorMessage = modelError instanceof Error ? modelError.message : 'Unknown error';
+        console.error(`Error with model ${modelName}:`, errorMessage);
+        lastError = errorMessage;
       }
-      
-      console.log("Successfully generated response, length:", text.length);
-      return NextResponse.json({ response: text }, { headers });
-    } catch (modelError: any) {
-      console.error('Model error:', modelError.message);
-      return NextResponse.json(
-        { error: 'Error generating content: ' + modelError.message },
-        { status: 500, headers }
-      );
     }
     
-  } catch (error: any) {
-    console.error('Error details:', {
-      message: error.message,
-      name: error.name,
-      stack: error.stack,
-    });
+    // If we get here, all models failed
+    return NextResponse.json(
+      { error: `Could not generate content with any available model. Last error: ${lastError}` },
+      { status: 500, headers }
+    );
+    
+  } catch (error: Error | unknown) {
+    const errorDetails = error instanceof Error 
+      ? { message: error.message, name: error.name, stack: error.stack }
+      : { message: 'Unknown error' };
+      
+    console.error('Error details:', errorDetails);
     
     return NextResponse.json(
       { error: 'Could not generate response. Please try again.' },
